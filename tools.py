@@ -9,33 +9,71 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_weather(city: str) -> str:
     """
-    通过调用 wttr.in API 查询真实的天气信息。
+    通过调用风和天气(QWeather) API查询真实的天气信息。
     """
-    # API端点，我们请求JSON格式的数据
-    url = f"https://wttr.in/{city}?format=j1"
+    # 从环境变量中读取API密钥
+    api_key = os.environ.get("QWEATHER_API_KEY")
+    if not api_key:
+        return "错误:未配置QWEATHER_API_KEY环境变量。"
+
+    # 城市查询API端点
+    location_url = "https://m44ky49pd3.re.qweatherapi.com/geo/v2/city/lookup"
+    # 天气查询API端点
+    weather_url = "https://m44ky49pd3.re.qweatherapi.com/v7/weather/now"
 
     try:
-        # 发起网络请求，禁用SSL验证，设置超时
-        response = requests.get(url, verify=False, timeout=10)
-        # 检查响应状态码是否为200 (成功)
-        response.raise_for_status()
-        # 解析返回的JSON数据
-        data = response.json()
+        # 1. 先查询城市ID
+        location_params = {
+            "location": city,
+            "key": api_key
+        }
+        location_response = requests.get(location_url, params=location_params, timeout=10)
+        location_response.raise_for_status()
+        location_data = location_response.json()
 
-        # 提取当前天气状况
-        current_condition = data['current_condition'][0]
-        weather_desc = current_condition['weatherDesc'][0]['value']
-        temp_c = current_condition['temp_C']
+        # 检查是否找到城市
+        if location_data.get("code") != "200" or not location_data.get("location"):
+            return f"错误:未找到城市 '{city}'"
+
+        # 获取城市ID（使用第一个匹配的城市）
+        location_id = location_data["location"][0]["id"]
+
+        # 2. 使用城市ID查询天气
+        weather_params = {
+            "location": location_id,
+            "key": api_key
+        }
+        weather_response = requests.get(weather_url, params=weather_params, timeout=10)
+        weather_response.raise_for_status()
+        weather_data = weather_response.json()
+
+        # 检查天气查询是否成功
+        if weather_data.get("code") != "200":
+            return f"错误:天气查询失败，错误码: {weather_data.get('code')}"
+
+        # 提取天气信息
+        now = weather_data["now"]
+        text = now.get("text", "")
+        temp = now.get("temp", "")
+        wind_dir = now.get("windDir", "")
+        wind_scale = now.get("windScale", "")
+        humidity = now.get("humidity", "")
 
         # 格式化成自然语言返回
-        return f"{city}当前天气:{weather_desc}，气温{temp_c}摄氏度"
+        result = f"{city}当前天气: {text}，气温{temp}摄氏度"
+        if wind_dir and wind_scale:
+            result += f"，{wind_dir}风{wind_scale}级"
+        if humidity:
+            result += f"，湿度{humidity}%"
+
+        return result
 
     except requests.exceptions.RequestException as e:
         # 处理网络错误
-        return f"错误:无法连接到天气服务，请检查网络连接或稍后重试。详细错误: {str(e)}"
+        return f"错误:无法连接到风和天气服务，请检查网络连接或稍后重试。详细错误: {str(e)}"
     except (KeyError, IndexError) as e:
         # 处理数据解析错误
-        return f"错误:解析天气数据失败，可能是城市名称无效 - {e}"
+        return f"错误:解析天气数据失败 - {e}"
 
 
 

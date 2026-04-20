@@ -5,11 +5,13 @@ from tools import available_tools
 
 # --- 1. 配置LLM客户端 ---
 # 请根据您使用的服务，将这里替换成对应的凭证和地址
-API_KEY = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+API_KEY = "sk-d8d18875bb554537bed80fec4df8bccc"
 BASE_URL = "https://api.deepseek.com"
 MODEL_ID = "deepseek-chat"
-TAVILY_API_KEY = "tvly-dev-xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TAVILY_API_KEY = "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"
+QWEATHER_API_KEY = "fbb13c559f9341b18eb494dfcb7e6f98"
 os.environ['TAVILY_API_KEY'] = TAVILY_API_KEY
+os.environ['QWEATHER_API_KEY'] = QWEATHER_API_KEY
 
 # Agent 的系统提示词
 AGENT_SYSTEM_PROMPT = """你是一个智能助手，可以使用以下工具来帮助用户：
